@@ -23,6 +23,7 @@ local math_min = math.min
 local SW = 1920
 local SH = 1080
 local SLIDE_MARGIN = 300
+local WHIRR_EVENT = "wwise/events/player/play_ability_cryptic_precision_stance_target"
 local SCRAMBLE_DURATION = 0.4
 local DOTS_PERIOD = 0.4
 local SCANNER_X = 720
@@ -100,6 +101,7 @@ HudElementAuto9Reticule.init = function(self, parent, draw_layer, start_scale)
 	self._locked_unit = nil
 	self._focused_unit = nil
 	self._tag_driven = nil
+	self._whirr_unit = nil
 	self._scanner_unit = nil
 	self._scanner_t = nil
 
@@ -198,6 +200,16 @@ HudElementAuto9Reticule._update_targeting = function(self, t)
 		tagged = mod.tag.current_unit(s.tag_own_only, local_player_unit)
 	end
 	self._tag_driven = tagged ~= nil
+
+	if tagged ~= self._whirr_unit then
+		if tagged and s.tag_whirr then
+			local ui = Managers.ui
+			if ui and ui.play_2d_sound then
+				ui:play_2d_sound(WHIRR_EVENT)
+			end
+		end
+		self._whirr_unit = tagged
+	end
 
 	local active, data
 	if tagged then
@@ -514,6 +526,7 @@ HudElementAuto9Reticule.destroy = function(self, ui_renderer)
 	self._locked_unit = nil
 	self._focused_unit = nil
 	self._tag_driven = nil
+	self._whirr_unit = nil
 	self._scanner_unit = nil
 	self._scanner_t = nil
 end

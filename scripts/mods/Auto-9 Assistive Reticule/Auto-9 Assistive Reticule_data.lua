@@ -163,6 +163,7 @@ return {
 				sub_widgets = {
 					{ setting_id = "a9_tag_enabled", type = "checkbox", default_value = true },
 					{ setting_id = "a9_tag_own_only", type = "checkbox", default_value = true },
+					{ setting_id = "a9_tag_whirr", type = "checkbox", default_value = true },
 				},
 			},
 		},

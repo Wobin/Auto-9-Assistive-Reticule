@@ -93,6 +93,7 @@ mod.refresh_settings = function()
 
 	s.tag_enabled = mod:get("a9_tag_enabled")
 	s.tag_own_only = mod:get("a9_tag_own_only")
+	s.tag_whirr = mod:get("a9_tag_whirr")
 
 	mod.target.SLAM_DURATION = s.slam_duration
 end

@@ -133,4 +133,7 @@ return {
 	a9_tag_own_only = {
 		en = "Only my own tags",
 	},
+	a9_tag_whirr = {
+		en = "Play the Skitarii lock sound on a tagged lock",
+	},
 }
