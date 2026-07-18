@@ -38,4 +38,18 @@ scanner.dots = function(elapsed, period)
 	return string.rep(".", phase)
 end
 
+scanner.split_labels = function(csv)
+	local items = {}
+	if type(csv) ~= "string" then
+		return items
+	end
+	for item in csv:gmatch("[^,]+") do
+		item = item:match("^%s*(.-)%s*$")
+		if item ~= "" then
+			items[#items + 1] = item
+		end
+	end
+	return items
+end
+
 return scanner

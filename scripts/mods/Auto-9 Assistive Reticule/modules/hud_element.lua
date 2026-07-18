@@ -24,6 +24,18 @@ local SW = 1920
 local SH = 1080
 local SLIDE_MARGIN = 300
 local WHIRR_EVENT = "wwise/events/player/play_ability_cryptic_precision_stance_target"
+local math_random = math.random
+local DEFAULT_LABEL_KEY = "a9_scanner_labels_default"
+local ARCHETYPE_LABEL_KEYS = {
+	veteran = "a9_scanner_labels_veteran",
+	broker = "a9_scanner_labels_broker",
+	adamant = "a9_scanner_labels_adamant",
+	cryptic = "a9_scanner_labels_cryptic",
+	zealot = "a9_scanner_labels_zealot",
+	psyker = "a9_scanner_labels_psyker",
+	ogryn = "a9_scanner_labels_ogryn",
+}
+
 local SCRAMBLE_DURATION = 0.4
 local DOTS_PERIOD = 0.4
 local SCANNER_X = 720
@@ -104,6 +116,8 @@ HudElementAuto9Reticule.init = function(self, parent, draw_layer, start_scale)
 	self._whirr_unit = nil
 	self._scanner_unit = nil
 	self._scanner_t = nil
+	self._archetype = nil
+	self._label = nil
 
 	self._was_eligible = nil
 end
@@ -456,19 +470,29 @@ HudElementAuto9Reticule._draw_scanner = function(self, ui_renderer, t)
 		return
 	end
 
+	if not self._archetype then
+		local player = Managers.player and Managers.player:local_player_safe(1)
+		local profile = player and player:profile()
+		local archetype = profile and profile.archetype
+		self._archetype = archetype and archetype.name or nil
+	end
+
 	local text
 	local locked_unit = self._locked_unit
 	if locked_unit then
 		if locked_unit ~= self._scanner_unit then
 			self._scanner_unit = locked_unit
 			self._scanner_t = t
+			local key = ARCHETYPE_LABEL_KEYS[self._archetype] or DEFAULT_LABEL_KEY
+			local labels = scanner.split_labels(mod:localize(key))
+			self._label = (#labels > 0 and labels[math_random(#labels)]) or "WANTED"
 		end
 		local name = credits_names.name_for(locked_unit)
 		local resolved = scanner.scramble(name, t - (self._scanner_t or t), SCRAMBLE_DURATION)
-		text = "SUBJECT: " .. resolved .. " / WANTED"
+		text = mod:localize("a9_scanner_subject") .. resolved .. " / " .. (self._label or "WANTED")
 	else
 		self._scanner_unit = nil
-		text = "SCANNING" .. scanner.dots(t, DOTS_PERIOD)
+		text = mod:localize("a9_scanner_scanning") .. scanner.dots(t, DOTS_PERIOD)
 	end
 
 	local font_size = s.scanner_size or 24
@@ -529,6 +553,8 @@ HudElementAuto9Reticule.destroy = function(self, ui_renderer)
 	self._whirr_unit = nil
 	self._scanner_unit = nil
 	self._scanner_t = nil
+	self._archetype = nil
+	self._label = nil
 end
 
 return HudElementAuto9Reticule

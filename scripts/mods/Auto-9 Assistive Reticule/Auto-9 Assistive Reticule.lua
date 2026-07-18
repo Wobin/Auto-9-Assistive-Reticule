@@ -1,13 +1,13 @@
 --[[
 	Name: Auto-9 Assistive Reticule
 	Author: Wobin
-	Date: 17/07/2026
-	Version: 1.0.0
+	Date: 19/07/2026
+	Version: 1.1.0
 	Repository: https://github.com/Wobin/Auto-9-Assistive-Reticule
 ]]--
 
 local mod = get_mod("Auto-9 Assistive Reticule")
-mod.version = "1.0.0"
+mod.version = "1.1.0"
 
 mod.settings = {}
 
