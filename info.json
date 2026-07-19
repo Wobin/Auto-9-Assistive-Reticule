@@ -1,6 +1,6 @@
 {
   "name": "Auto-9 Assistive Reticule",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "RoboCop-style targeting HUD. Auto-aims the reticule during the Skitarii Advanced Combat Doctrines ability, or on any class by tagging an enemy, with a scanner readout that names the subject.",
   "author": "Wobin"
 }
