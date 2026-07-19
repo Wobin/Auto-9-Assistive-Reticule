@@ -111,4 +111,34 @@ return function()
 		target.update(1.05, false, nil)
 		runner.eq(target.state(), target.RELEASE, "stance down is authoritative over a pending loss")
 	end)
+
+	runner.it("is_enemy_unit rejects nil", function()
+		local target = load_target()
+		runner.falsy(target.is_enemy_unit(nil, function() return nil end, {}))
+	end)
+
+	runner.it("is_enemy_unit rejects a dead unit", function()
+		local target = load_target()
+		runner.falsy(target.is_enemy_unit(UNIT_A, function() return nil end, {}), "absent from HEALTH_ALIVE = dead")
+	end)
+
+	runner.it("is_enemy_unit rejects a live PLAYER unit (the respawn-recycle bug)", function()
+		local target = load_target()
+		local health_alive = { [UNIT_A] = true }
+		local is_player = function(u) return u == UNIT_A and "player_obj" or nil end
+		runner.falsy(target.is_enemy_unit(UNIT_A, is_player, health_alive),
+			"a recycled handle now owned by a player must never be targeted")
+	end)
+
+	runner.it("is_enemy_unit accepts a live non-player unit", function()
+		local target = load_target()
+		local health_alive = { [UNIT_A] = true }
+		runner.truthy(target.is_enemy_unit(UNIT_A, function() return nil end, health_alive))
+	end)
+
+	runner.it("is_enemy_unit skips the liveness gate when no health table is supplied", function()
+		local target = load_target()
+		runner.truthy(target.is_enemy_unit(UNIT_A, function() return nil end, nil),
+			"nil health_alive = caller already pre-checked liveness")
+	end)
 end

@@ -221,4 +221,13 @@ return {
 		en = "Play the Skitarii lock sound on a tagged lock",
 		["zh-cn"] = "标记锁定时播放护教军锁定音效",
 	},
+	a9_exec_group = {
+		en = "Executioner Stance (Veteran)",
+	},
+	a9_exec_enabled = {
+		en = "Mark targets during Executioner's Stance",
+	},
+	a9_exec_parallel = {
+		en = "Fan out multiple reticles at once (instead of one sweeping)",
+	},
 }

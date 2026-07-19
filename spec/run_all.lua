@@ -22,6 +22,7 @@ local SPECS = {
 	"spec.scanner_spec",
 	"spec.credits_names_spec",
 	"spec.tag_spec",
+	"spec.exec_stance_spec",
 }
 
 for _, name in ipairs(SPECS) do

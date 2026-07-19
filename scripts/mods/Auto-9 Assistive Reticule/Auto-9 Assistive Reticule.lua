@@ -19,6 +19,7 @@ mod.eligibility = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 A
 mod.scanner = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assistive Reticule/modules/scanner")
 mod.credits_names = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assistive Reticule/modules/credits_names")
 mod.tag = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assistive Reticule/modules/tag")
+mod.exec_stance = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assistive Reticule/modules/exec_stance")
 
 local DRAW_LAYER = 360
 local UI_HUD_SETTINGS_PATH = "scripts/settings/ui/ui_hud_settings"
@@ -41,6 +42,15 @@ mod:register_hud_element({
 	visibility_groups = { "alive" },
 	use_hud_scale = true,
 })
+
+mod:hook("OutlineSystem", "add_outline", function(func, self, unit, outline_name)
+	local s = mod.settings
+	if s and s.exec_enabled and mod.exec_stance and mod.exec_stance.is_active() and outline_name == "special_target" then
+		mod.exec_stance.capture(unit)
+		return
+	end
+	return func(self, unit, outline_name)
+end)
 
 local function colour(base, opacity_id)
 	return {
@@ -95,6 +105,9 @@ mod.refresh_settings = function()
 	s.tag_own_only = mod:get("a9_tag_own_only")
 	s.tag_whirr = mod:get("a9_tag_whirr")
 
+	s.exec_enabled = mod:get("a9_exec_enabled")
+	s.exec_parallel = mod:get("a9_exec_parallel")
+
 	mod.target.SLAM_DURATION = s.slam_duration
 end
 
@@ -121,6 +134,9 @@ mod.on_all_mods_loaded = function()
 	if mod.tag then
 		mod.tag.init(mod)
 	end
+	if mod.exec_stance then
+		mod.exec_stance.init(mod)
+	end
 end
 
 mod.on_game_state_changed = function(status, _state_name)
@@ -130,6 +146,9 @@ mod.on_game_state_changed = function(status, _state_name)
 		end
 		if mod.tag then
 			mod.tag.reset()
+		end
+		if mod.exec_stance then
+			mod.exec_stance.reset()
 		end
 	end
 end

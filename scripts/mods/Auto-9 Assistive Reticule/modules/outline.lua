@@ -72,6 +72,15 @@ outline.remove = function(unit)
 	pcall(system.remove_outline, system, unit, OL_NAME)
 end
 
+outline.remove_all = function(set)
+	if not set then
+		return
+	end
+	for unit in pairs(set) do
+		outline.remove(unit)
+	end
+end
+
 outline.on_exit = function()
 end
 

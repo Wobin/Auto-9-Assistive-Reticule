@@ -166,6 +166,14 @@ return {
 					{ setting_id = "a9_tag_whirr", type = "checkbox", default_value = true },
 				},
 			},
+			{
+				setting_id = "a9_exec_group",
+				type = "group",
+				sub_widgets = {
+					{ setting_id = "a9_exec_enabled", type = "checkbox", default_value = true },
+					{ setting_id = "a9_exec_parallel", type = "checkbox", default_value = false },
+				},
+			},
 		},
 	},
 }

@@ -99,6 +99,19 @@ target.reset = function()
 	last_seen_at = 0
 end
 
+target.is_enemy_unit = function(unit, is_player_fn, health_alive)
+	if not unit then
+		return false
+	end
+	if health_alive and not health_alive[unit] then
+		return false
+	end
+	if is_player_fn and is_player_fn(unit) then
+		return false
+	end
+	return true
+end
+
 local ScriptUnit = ScriptUnit
 
 target.read_targeting_data = function(player_unit)

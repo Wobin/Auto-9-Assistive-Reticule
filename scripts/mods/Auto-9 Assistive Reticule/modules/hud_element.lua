@@ -18,11 +18,18 @@ local Managers = Managers
 
 local SETTLE = 0.0
 local SWEEP_DURATION = 0.4
+local SWEEP_MIN = 0.08
+local SWEEP_MAX = 0.4
+local SWEEP_PER_PX = 0.0005
 local ARRIVE = 5
 local math_min = math.min
+local math_max = math.max
+local math_sqrt = math.sqrt
 local SW = 1920
 local SH = 1080
 local SLIDE_MARGIN = 300
+local EXEC_STEP = 0.16
+local EXEC_BOX_TIME = 0.16
 local WHIRR_EVENT = "wwise/events/player/play_ability_cryptic_precision_stance_target"
 local math_random = math.random
 local DEFAULT_LABEL_KEY = "a9_scanner_labels_default"
@@ -96,6 +103,20 @@ local function is_reloading(player_unit)
 	return sequence.is_reload_kind(action_settings and action_settings.kind)
 end
 
+local function is_player_unit(unit)
+	local player_manager = Managers.player
+	if not player_manager then
+		return nil
+	end
+	local ok, player = pcall(player_manager.player_by_unit, player_manager, unit)
+	return ok and player or nil
+end
+
+local function is_enemy_unit(unit)
+	local health_alive = rawget(_G, "HEALTH_ALIVE")
+	return mod.target and mod.target.is_enemy_unit(unit, is_player_unit, health_alive)
+end
+
 HudElementAuto9Reticule.init = function(self, parent, draw_layer, start_scale)
 	HudElementAuto9Reticule.super.init(self, parent, draw_layer, start_scale, definitions)
 
@@ -108,18 +129,24 @@ HudElementAuto9Reticule.init = function(self, parent, draw_layer, start_scale)
 	self._cross = nil
 	self._cross_origin = nil
 	self._cross_t0 = nil
+	self._sweep_dur = nil
 	self._prev_wpos = nil
 	self._ol_unit = nil
 	self._locked_unit = nil
 	self._focused_unit = nil
 	self._tag_driven = nil
 	self._whirr_unit = nil
+	self._exec_active = nil
+	self._exec_marked = nil
+	self._exec_next_t = nil
+	self._exec_acq_times = nil
 	self._scanner_unit = nil
 	self._scanner_t = nil
 	self._archetype = nil
 	self._label = nil
 
 	self._was_eligible = nil
+	self._pu = nil
 end
 
 local function breed_for(unit)
@@ -173,6 +200,22 @@ HudElementAuto9Reticule._drop_outline = function(self)
 	end
 end
 
+HudElementAuto9Reticule._reset_lock_state = function(self)
+	self:_drop_outline()
+	self._lock_unit = nil
+	self._lock_t = nil
+	self._cross = nil
+	self._cross_origin = nil
+	self._cross_t0 = nil
+	self._sweep_dur = nil
+	self._prev_wpos = nil
+	self._locked_unit = nil
+	self._focused_unit = nil
+	if mod.target then
+		mod.target.reset()
+	end
+end
+
 HudElementAuto9Reticule._update_targeting = function(self, t)
 	local stance = mod.stance
 	local target = mod.target
@@ -183,22 +226,19 @@ HudElementAuto9Reticule._update_targeting = function(self, t)
 
 	local eligible = eligibility.get()
 	if eligible == false and self._was_eligible then
-		self:_drop_outline()
-		self._lock_unit = nil
-		self._lock_t = nil
-		self._cross = nil
-		self._cross_origin = nil
-		self._cross_t0 = nil
-		self._prev_wpos = nil
-		self._locked_unit = nil
-		target.reset()
+		self:_reset_lock_state()
 	end
 	if eligible ~= nil then
 		self._was_eligible = eligible
 	end
 	local s = mod.settings
+	if mod.exec_stance then
+		mod.exec_stance.update(t)
+	end
+	local exec_active = (s and s.exec_enabled and mod.exec_stance and mod.exec_stance.is_active()) and true or false
+	self._exec_active = exec_active
 	local tag_enabled = s and s.tag_enabled
-	if not eligible and not tag_enabled then
+	if not eligible and not tag_enabled and not exec_active then
 		return
 	end
 
@@ -208,6 +248,11 @@ HudElementAuto9Reticule._update_targeting = function(self, t)
 	local player_unit = parent and parent:player_unit()
 	local local_player = Managers.player and Managers.player:local_player_safe(1)
 	local local_player_unit = local_player and local_player.player_unit
+
+	if self._pu ~= nil and local_player_unit ~= self._pu then
+		self:_reset_lock_state()
+	end
+	self._pu = local_player_unit
 
 	local tagged = nil
 	if tag_enabled and mod.tag then
@@ -248,16 +293,17 @@ HudElementAuto9Reticule._update_targeting = function(self, t)
 	local locked_unit = nil
 	if active then
 		local held = nil
-		if self._locked_unit and player_unit and is_reloading(player_unit) then
-			local health_alive = rawget(_G, "HEALTH_ALIVE")
-			if health_alive and health_alive[self._locked_unit] then
-				held = self._locked_unit
-			end
+		if self._locked_unit and player_unit and is_reloading(player_unit)
+			and is_enemy_unit(self._locked_unit) then
+			held = self._locked_unit
 		end
 		if held then
 			locked_unit = held
 		elseif state == target.LOCKED then
-			locked_unit = target.unit()
+			local u = target.unit()
+			if is_enemy_unit(u) then
+				locked_unit = u
+			end
 		end
 	end
 	self._locked_unit = locked_unit
@@ -281,6 +327,9 @@ local function mod_active(self)
 end
 
 HudElementAuto9Reticule._draw_box = function(self, ui_renderer, t)
+	if self._exec_active then
+		return
+	end
 	if not mod_active(self) then
 		return
 	end
@@ -315,13 +364,13 @@ HudElementAuto9Reticule._draw_box = function(self, ui_renderer, t)
 	local health_alive = rawget(_G, "HEALTH_ALIVE")
 	local reloading = false
 	if stance and stance.is_active()
-		and self._lock_unit and health_alive and health_alive[self._lock_unit]
+		and self._lock_unit and is_enemy_unit(self._lock_unit)
 		and is_reloading(player_unit) then
 		unit = self._lock_unit
 		reloading = true
 	end
 
-	if not unit then
+	if not unit or not is_enemy_unit(unit) then
 		self._lock_t = nil
 		self:_drop_outline()
 		return
@@ -382,6 +431,9 @@ HudElementAuto9Reticule._draw_box = function(self, ui_renderer, t)
 		self._cross = { x = ox, y = oy }
 		self._cross_origin = { x = ox, y = oy }
 		self._cross_t0 = t
+		local dx = gx - ox
+		local dy = gy - oy
+		self._sweep_dur = math_min(SWEEP_MAX, math_max(SWEEP_MIN, math_sqrt(dx * dx + dy * dy) * SWEEP_PER_PX))
 		self._lock_unit = unit
 		self._lock_t = nil
 		self._focused_unit = nil
@@ -396,8 +448,9 @@ HudElementAuto9Reticule._draw_box = function(self, ui_renderer, t)
 	end
 
 	local origin = self._cross_origin
-	if origin and SWEEP_DURATION > 0 then
-		local u = math_min(1, (t - (self._cross_t0 or t)) / SWEEP_DURATION)
+	local sweep_dur = self._sweep_dur or SWEEP_DURATION
+	if origin and sweep_dur > 0 then
+		local u = math_min(1, (t - (self._cross_t0 or t)) / sweep_dur)
 		local e = u * u * (3 - 2 * u)
 		self._cross = self._cross or { x = gx, y = gy }
 		self._cross.x = origin.x + (gx - origin.x) * e
@@ -511,8 +564,115 @@ HudElementAuto9Reticule._draw_scanner = function(self, ui_renderer, t)
 	UIRenderer.draw_text(ui_renderer, text, font_size, "mono_tide_regular", SCANNER_POS, SCANNER_SIZE, colour, SCANNER_OPTS)
 end
 
+HudElementAuto9Reticule._draw_exec = function(self, ui_renderer, t)
+	local exec = mod.exec_stance
+	local outline = mod.outline
+	local project = mod.project
+	if not self._exec_active or not exec or not outline or not project then
+		if self._exec_marked then
+			outline.remove_all(self._exec_marked)
+			self._exec_marked = nil
+		end
+		self._exec_next_t = nil
+		self._exec_acq_times = nil
+		return
+	end
+
+	local parent = self._parent
+	local player = Managers.player:local_player_safe(1)
+	local player_unit = player and player.player_unit
+	local camera = parent and parent:player_camera()
+	if not player_unit or not camera then
+		return
+	end
+
+	self._exec_marked = self._exec_marked or {}
+
+	local scale = ui_renderer.scale
+	local screen_position = UIScenegraph.world_position(self._ui_scenegraph, "screen", scale)
+	local ctx = {
+		camera = camera,
+		camera_position = Camera.local_position(camera),
+		camera_direction = Quaternion.forward(Camera.local_rotation(camera)),
+		screen_offset_x = screen_position.x,
+		screen_offset_y = screen_position.y,
+		inverse_scale = ui_renderer.inverse_scale,
+	}
+
+	local health_alive = rawget(_G, "HEALTH_ALIVE")
+
+	local function breed_of(u)
+		local ext = ScriptUnit.has_extension(u, "unit_data_system")
+		return ext and ext:breed() or nil
+	end
+	local function screen_x_of(u)
+		if health_alive and not health_alive[u] then
+			return nil
+		end
+		local ox = project_world(Unit.world_position(u, 1), ctx)
+		return ox
+	end
+
+	local ordered = exec.order_by_x(exec.pending_set(), screen_x_of)
+	local s = mod.settings
+	self._exec_acq_times = self._exec_acq_times or {}
+
+	if s and s.exec_parallel then
+		for i = 1, #ordered do
+			local u = ordered[i]
+			if not self._exec_marked[u] and outline.add(u) then
+				self._exec_marked[u] = true
+				self._exec_acq_times[u] = t
+			end
+		end
+	else
+		self._exec_next_t = self._exec_next_t or t
+		if t >= self._exec_next_t then
+			for i = 1, #ordered do
+				local u = ordered[i]
+				if not self._exec_marked[u] then
+					if outline.add(u) then
+						self._exec_marked[u] = true
+						self._exec_acq_times[u] = t
+					end
+					break
+				end
+			end
+			self._exec_next_t = t + EXEC_STEP
+		end
+	end
+
+	local box_thickness = (s and s.box_thickness) or 2
+	local colour = (s and s.box_colour) or { 255, 255, 0, 0 }
+	for i = 1, #ordered do
+		local u = ordered[i]
+		local at = self._exec_acq_times[u]
+		if at and (t - at) <= EXEC_BOX_TIME and health_alive and health_alive[u] then
+			local nodes = project.nodes_for(u)
+			if nodes then
+				local gx, gy, half_w, half_h = project.box_for(ctx, u, nodes, breed_of(u))
+				if gx then
+					local eased = sequence.ease_out((t - at) / EXEC_BOX_TIME)
+					local w, h = project.lerp_slam_size(half_w, half_h, eased)
+					local x = gx - w * 0.5
+					local y = gy - h * 0.5
+					UIRenderer.draw_rect(ui_renderer, Vector3(x, y, 1), Vector3(w, box_thickness, 1), colour)
+					UIRenderer.draw_rect(ui_renderer, Vector3(x, y + h - box_thickness, 1), Vector3(w, box_thickness, 1), colour)
+					UIRenderer.draw_rect(ui_renderer, Vector3(x, y, 1), Vector3(box_thickness, h, 1), colour)
+					UIRenderer.draw_rect(ui_renderer, Vector3(x + w - box_thickness, y, 1), Vector3(box_thickness, h, 1), colour)
+				end
+			end
+		end
+	end
+end
+
 HudElementAuto9Reticule._draw_widgets = function(self, dt, t, input_service, ui_renderer, render_settings)
 	HudElementAuto9Reticule.super._draw_widgets(self, dt, t, input_service, ui_renderer, render_settings)
+
+	local ok0, err0 = pcall(self._draw_exec, self, ui_renderer, t)
+	if not ok0 then
+		mod:error("Auto-9 Assistive Reticule exec draw failed: " .. tostring(err0))
+	end
 
 	local ok, err = pcall(self._draw_box, self, ui_renderer, t)
 	if not ok then
@@ -536,6 +696,10 @@ HudElementAuto9Reticule.destroy = function(self, ui_renderer)
 		mod.outline.remove(self._ol_unit)
 	end
 
+	if mod.outline and self._exec_marked then
+		mod.outline.remove_all(self._exec_marked)
+	end
+
 	self._cached_unit = nil
 	self._cached_nodes = nil
 	self._cached_breed = nil
@@ -545,16 +709,22 @@ HudElementAuto9Reticule.destroy = function(self, ui_renderer)
 	self._cross = nil
 	self._cross_origin = nil
 	self._cross_t0 = nil
+	self._sweep_dur = nil
 	self._prev_wpos = nil
 	self._ol_unit = nil
 	self._locked_unit = nil
 	self._focused_unit = nil
 	self._tag_driven = nil
 	self._whirr_unit = nil
+	self._exec_active = nil
+	self._exec_marked = nil
+	self._exec_next_t = nil
+	self._exec_acq_times = nil
 	self._scanner_unit = nil
 	self._scanner_t = nil
 	self._archetype = nil
 	self._label = nil
+	self._pu = nil
 end
 
 return HudElementAuto9Reticule

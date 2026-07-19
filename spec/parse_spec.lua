@@ -15,6 +15,7 @@ local SOURCES = {
 	"scripts/mods/Auto-9 Assistive Reticule/modules/scanner.lua",
 	"scripts/mods/Auto-9 Assistive Reticule/modules/credits_names.lua",
 	"scripts/mods/Auto-9 Assistive Reticule/modules/tag.lua",
+	"scripts/mods/Auto-9 Assistive Reticule/modules/exec_stance.lua",
 }
 
 local function read(path)
