@@ -72,9 +72,22 @@ exec_stance.pending_set = function()
 	return pending
 end
 
+local order_out = {}
+local order_xs = setmetatable({}, { __mode = "k" })
+
+local function by_screen_x(a, b)
+	return order_xs[a] < order_xs[b]
+end
+
 exec_stance.order_by_x = function(units, screen_x_of)
-	local out = {}
-	local xs = {}
+	local out = order_out
+	local xs = order_xs
+	for i = #out, 1, -1 do
+		out[i] = nil
+	end
+	for unit in pairs(xs) do
+		xs[unit] = nil
+	end
 	for unit in pairs(units) do
 		local x = screen_x_of(unit)
 		if x then
@@ -82,9 +95,7 @@ exec_stance.order_by_x = function(units, screen_x_of)
 			xs[unit] = x
 		end
 	end
-	table.sort(out, function(a, b)
-		return xs[a] < xs[b]
-	end)
+	table.sort(out, by_screen_x)
 	return out
 end
 

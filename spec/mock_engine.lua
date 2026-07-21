@@ -178,7 +178,18 @@ local fake_pose = { position = vec(0, 0, 0), rotation = Quaternion.identity() }
 
 function M.set_listener_position(p) fake_pose.position = p end
 
-local player = { viewport_name = "player1", player_unit = nil }
+local player = { viewport_name = "player1", player_unit = nil, archetype_name = nil }
+
+-- Real players always answer :profile(). The archetype defaults to nil so specs that never
+-- set one see local_archetype() return nil, which is the pre-session shape.
+function player:profile()
+	if not self.archetype_name then
+		return nil
+	end
+	return { archetype = { name = self.archetype_name } }
+end
+
+function M.set_archetype(name) player.archetype_name = name end
 
 local Managers = {
 	time = { time = function(_self, _name) return now end },
@@ -346,6 +357,7 @@ function M.install(settings)
 	now = 0
 	fake_pose.position = vec(0, 0, 0)
 	player.player_unit = nil
+	player.archetype_name = nil
 
 	install_stdlib()
 
@@ -365,6 +377,10 @@ function M.install(settings)
 	_G.Application = Application
 	_G.Promise = Promise
 	_G.DEDICATED_SERVER = false
+
+	_G.Localize = function(key)
+		return key
+	end
 
 	_G.get_mod = function(name)
 		if name == M.MOD_NAME then return mod end

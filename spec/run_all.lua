@@ -23,6 +23,10 @@ local SPECS = {
 	"spec.credits_names_spec",
 	"spec.tag_spec",
 	"spec.exec_stance_spec",
+	"spec.mark_sources_spec",
+	"spec.mark_capture_spec",
+	"spec.mark_hooks_spec",
+	"spec.keyword_stance_spec",
 }
 
 for _, name in ipairs(SPECS) do

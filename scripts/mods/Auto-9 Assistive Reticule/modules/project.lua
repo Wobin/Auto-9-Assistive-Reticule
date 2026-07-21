@@ -19,15 +19,16 @@ local NODE_HIGH = "enemy_aim_target_03"
 local DEFAULT_HALF_EXTENT_RIGHT = 0.3
 local MIN_HEIGHT_ASPECT = 0.5
 
+local function node_of(Unit, unit, name)
+	if Unit.has_node(unit, name) then
+		return Unit.node(unit, name)
+	end
+	return nil
+end
+
 project.nodes_for = function(unit)
 	local Unit = Unit
-	local function node(name)
-		if Unit.has_node(unit, name) then
-			return Unit.node(unit, name)
-		end
-		return nil
-	end
-	local low, mid, high = node(NODE_LOW), node(NODE_MID), node(NODE_HIGH)
+	local low, mid, high = node_of(Unit, unit, NODE_LOW), node_of(Unit, unit, NODE_MID), node_of(Unit, unit, NODE_HIGH)
 	if not mid or not high then
 		return nil
 	end
@@ -95,17 +96,18 @@ project.box_from_positions = function(ctx, positions, half_extent_right)
 	return cx, cy, half_w, half_h
 end
 
+local box_positions = {}
+
 project.box_for = function(ctx, unit, nodes, breed)
 	local Unit = Unit
 	if not nodes then
 		return nil
 	end
 	local mid = Unit.world_position(unit, nodes.mid)
-	local positions = {
-		low = Unit.world_position(unit, nodes.low),
-		mid = mid,
-		high = Unit.world_position(unit, nodes.high),
-	}
+	local positions = box_positions
+	positions.low = Unit.world_position(unit, nodes.low)
+	positions.mid = mid
+	positions.high = Unit.world_position(unit, nodes.high)
 	local half_extent_right = (breed and breed.half_extent_right) or DEFAULT_HALF_EXTENT_RIGHT
 
 	local cx, cy, half_w, half_h = project.box_from_positions(ctx, positions, half_extent_right)

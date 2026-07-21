@@ -1,13 +1,13 @@
 --[[
 	Name: Auto-9 Assistive Reticule
 	Author: Wobin
-	Date: 19/07/2026
-	Version: 1.2.0
+	Date: 21/07/2026
+	Version: 1.3.0
 	Repository: https://github.com/Wobin/Auto-9-Assistive-Reticule
 ]]--
 
 local mod = get_mod("Auto-9 Assistive Reticule")
-mod.version = "1.2.0"
+mod.version = "1.3.0"
 
 mod.settings = {}
 
@@ -20,6 +20,61 @@ mod.scanner = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assis
 mod.credits_names = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assistive Reticule/modules/credits_names")
 mod.tag = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assistive Reticule/modules/tag")
 mod.exec_stance = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assistive Reticule/modules/exec_stance")
+mod.mark_sources = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assistive Reticule/modules/mark_sources")
+mod.mark_capture = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assistive Reticule/modules/mark_capture")
+mod.keyword_stance = mod:io_dofile("Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assistive Reticule/modules/keyword_stance")
+mod.focus_stance = mod.keyword_stance.new("broker_combat_ability_focus")
+
+local cached_archetype = nil
+local cached_archetype_unit = nil
+
+local function local_archetype()
+	local player_manager = Managers.player
+	local player = player_manager and player_manager:local_player_safe(1)
+	local unit = player and player.player_unit
+	if unit ~= nil and unit == cached_archetype_unit then
+		return cached_archetype
+	end
+	local profile = player and player:profile()
+	local archetype = profile and profile.archetype
+	cached_archetype = archetype and archetype.name or nil
+	cached_archetype_unit = unit
+	return cached_archetype
+end
+
+mod.local_archetype = local_archetype
+
+local function row_is_live(row)
+	if not row then
+		return false
+	end
+	local s = mod.settings
+	if not s or s[row.setting] ~= true then
+		return false
+	end
+	if row.kind == "stance" then
+		return mod.focus_stance ~= nil and mod.focus_stance.is_active()
+	end
+	return true
+end
+
+mod.active_mark_row = function()
+	local archetype = local_archetype()
+	if not archetype then
+		return nil
+	end
+	if not mod.mark_sources then
+		return nil
+	end
+	local rows = mod.mark_sources.ROWS
+	for i = 1, #rows do
+		local row = rows[i]
+		if row.archetype == archetype and row_is_live(row) then
+			return row
+		end
+	end
+	return nil
+end
 
 local DRAW_LAYER = 360
 local UI_HUD_SETTINGS_PATH = "scripts/settings/ui/ui_hud_settings"
@@ -47,6 +102,24 @@ mod:hook("OutlineSystem", "add_outline", function(func, self, unit, outline_name
 	local s = mod.settings
 	if s and s.exec_enabled and mod.exec_stance and mod.exec_stance.is_active() and outline_name == "special_target" then
 		mod.exec_stance.capture(unit)
+		return
+	end
+	local sources = mod.mark_sources
+	local row = sources and sources.NAMES[outline_name] and sources.row_for(outline_name, local_archetype()) or nil
+	if row and row_is_live(row) and mod.mark_capture then
+		mod.mark_capture.capture(row, unit)
+		return
+	end
+	return func(self, unit, outline_name)
+end)
+
+mod:hook("OutlineSystem", "remove_outline", function(func, self, unit, outline_name)
+	local sources = mod.mark_sources
+	local row = sources and sources.NAMES[outline_name] and sources.row_for(outline_name, local_archetype()) or nil
+	if row and row_is_live(row) and mod.mark_capture and mod.mark_capture.uncapture(row, unit) then
+		if mod.outline then
+			mod.outline.remove(unit, mod.outline.MARK_NAME)
+		end
 		return
 	end
 	return func(self, unit, outline_name)
@@ -108,6 +181,11 @@ mod.refresh_settings = function()
 	s.exec_enabled = mod:get("a9_exec_enabled")
 	s.exec_parallel = mod:get("a9_exec_parallel")
 
+	s.mark_arbites = mod:get("a9_mark_arbites")
+	s.mark_psyker = mod:get("a9_mark_psyker")
+	s.mark_skitarii = mod:get("a9_mark_skitarii")
+	s.mark_broker = mod:get("a9_mark_broker")
+
 	mod.target.SLAM_DURATION = s.slam_duration
 end
 
@@ -137,18 +215,35 @@ mod.on_all_mods_loaded = function()
 	if mod.exec_stance then
 		mod.exec_stance.init(mod)
 	end
+	if mod.focus_stance then
+		mod.focus_stance.init()
+	end
 end
 
 mod.on_game_state_changed = function(status, _state_name)
+	cached_archetype = nil
+	cached_archetype_unit = nil
 	if status == "exit" then
-		if mod.outline then
-			mod.outline.on_exit()
+		if mod.stance then
+			mod.stance.reset()
 		end
 		if mod.tag then
 			mod.tag.reset()
 		end
 		if mod.exec_stance then
 			mod.exec_stance.reset()
+		end
+		if mod.focus_stance then
+			mod.focus_stance.reset()
+		end
+		if mod.mark_capture then
+			local dropped = mod.mark_capture.clear_all()
+			if mod.outline then
+				local mark = mod.outline.MARK_NAME
+				for i = 1, #dropped do
+					mod.outline.remove(dropped[i], mark)
+				end
+			end
 		end
 	end
 end

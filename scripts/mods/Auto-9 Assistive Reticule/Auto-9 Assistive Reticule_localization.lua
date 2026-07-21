@@ -221,13 +221,39 @@ return {
 		en = "Play the Skitarii lock sound on a tagged lock",
 		["zh-cn"] = "标记锁定时播放护教军锁定音效",
 	},
-	a9_exec_group = {
-		en = "Executioner Stance (Veteran)",
+	a9_veteran_group = {
+		en = Localize("loc_class_veteran_name"),
+	},
+	a9_arbites_group = {
+		en = Localize("loc_class_adamant_name"),
+	},
+	a9_mark_arbites = {
+		en = Localize("loc_talent_adamant_exterminator"),
+	},
+	a9_psyker_group = {
+		en = Localize("loc_class_psyker_name"),
+	},
+	a9_mark_psyker = {
+		en = Localize("loc_talent_psyker_marked_enemies_passive"),
+	},
+	a9_skitarii_group = {
+		en = Localize("loc_class_cryptic_name"),
+	},
+	a9_mark_skitarii = {
+		en = Localize("loc_talent_cryptic_specials_marking"),
+	},
+	a9_broker_group = {
+		en = Localize("loc_class_broker_name"),
+	},
+	a9_mark_broker = {
+		en = Localize("loc_talent_broker_ability_focus"),
 	},
 	a9_exec_enabled = {
 		en = "Mark targets during Executioner's Stance",
+		["zh-cn"] = "在处决者架势期间标记目标",
 	},
 	a9_exec_parallel = {
 		en = "Fan out multiple reticles at once (instead of one sweeping)",
+		["zh-cn"] = "同时展开多个准星（而非逐个扫描锁定）",
 	},
 }

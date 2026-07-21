@@ -167,11 +167,39 @@ return {
 				},
 			},
 			{
-				setting_id = "a9_exec_group",
+				setting_id = "a9_veteran_group",
 				type = "group",
 				sub_widgets = {
 					{ setting_id = "a9_exec_enabled", type = "checkbox", default_value = true },
 					{ setting_id = "a9_exec_parallel", type = "checkbox", default_value = false },
+				},
+			},
+			{
+				setting_id = "a9_arbites_group",
+				type = "group",
+				sub_widgets = {
+					{ setting_id = "a9_mark_arbites", type = "checkbox", default_value = true },
+				},
+			},
+			{
+				setting_id = "a9_psyker_group",
+				type = "group",
+				sub_widgets = {
+					{ setting_id = "a9_mark_psyker", type = "checkbox", default_value = true },
+				},
+			},
+			{
+				setting_id = "a9_skitarii_group",
+				type = "group",
+				sub_widgets = {
+					{ setting_id = "a9_mark_skitarii", type = "checkbox", default_value = true },
+				},
+			},
+			{
+				setting_id = "a9_broker_group",
+				type = "group",
+				sub_widgets = {
+					{ setting_id = "a9_mark_broker", type = "checkbox", default_value = true },
 				},
 			},
 		},

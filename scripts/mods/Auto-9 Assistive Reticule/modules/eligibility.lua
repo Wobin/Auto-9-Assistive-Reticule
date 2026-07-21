@@ -50,6 +50,11 @@ eligibility.init = function()
 			eligibility.invalidate()
 		end
 	end)
+	mod:hook_safe("PlayerUnitAbilityExtension", "unequip_ability", function(_self, ability_type)
+		if ability_type == "combat_ability" then
+			eligibility.invalidate()
+		end
+	end)
 end
 
 return eligibility
