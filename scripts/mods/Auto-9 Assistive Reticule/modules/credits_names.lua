@@ -4,6 +4,28 @@ local credits_names = {}
 
 local CREDITS_PATH = "scripts/ui/views/credits_view/credits"
 
+local OGRYN_NAMES = {
+	"Agg", "Ank", "Barth", "Bertol", "Blor", "Bogra", "Bron", "Brug", "Dagg", "Dent", "Drabba", "Dragbo",
+	"Drog", "Frug", "Hak", "Horg", "Igron", "Jabb", "Kront", "Nork", "Orod", "Punt", "Smasha", "Thuddo",
+	"Torb", "Tug", "Vogg", "Vohn", "Yordo",
+}
+
+local MASTIFF_NAMES = {
+	"Rogal", "Mell-0", "Relentless", "Nero", "Nalle", "Shadow", "Edd-3", "Russ", "M-01133", "Devil",
+	"Deathbite", "J4-ZZ", "Justicar", "Charl-3", "Kill-Dog", "CHI-2", "Irontooth", "Foe-Mauler", "Judge",
+	"Princeps", "Deadeye-IV", "41-F13", "Growler", "Ravager", "Macharius", "Sentinel-III", "Rex", "Irisi",
+	"Freja", "Lex", "Arya", "8-UDD-4", "Apol-1O", "Oll-IV", "L3a", "Howler", "Ros-13", "Necksnapper",
+	"Xheva", "Rashuns", "Adamant", "Eviscerator", "Regg-II", "Killer", "Mauler", "Blackmane", "Fury",
+	"Zorin", "Nisa", "Throatripper", "Feral", "Puck", "Sir-I", "Harbinger", "H4-Vanna", "Dibu", "Dai-Z",
+	"Sku-B3", "Smoke", "Grimm", "S4-NCH0", "Snarler", "Timor", "Champion", "Carrion", "Judgement-V",
+	"Rampage", "Sal-II", "Wrath", "Hunter", "Iron-Death", "Rasp", "Unit-749", "Ludde", "Justice", "81-U3",
+	"Aflor", "Raptor", "Else", "Executioner", "Grimnar", "Fangmaw", "Redclaw", "Dante", "Tracker-III",
+	"Cerberus", "Harri", "Unni", "Gore", "Henroi", "Terror", "Deadmutt", "Monster", "Kira", "Gunnar",
+	"Unit-392", "Woll-II", "Bjorn", "Fenrir", "Pursuit-IV", "Arrow", "Gut-Shredder", "Reine", "M15-CH4",
+	"D13-G0", "Biter", "Håkan", "Bloodfang", "Deathgrip", "Kosm-05", "Steelmaw", "Signe", "Killripper",
+	"Slaughter", "Gruff", "Cadia", "Bane", "Reeva", "Elin",
+}
+
 local HOUND_BREEDS = {
 	chaos_hound = true,
 	chaos_armored_hound = true,
@@ -71,7 +93,7 @@ credits_names.style_for = function(breed)
 	end
 	local tags = breed.tags
 	if tags and tags.ogryn then
-		return "surname"
+		return "ogryn"
 	end
 	local name = breed.name
 	if name and HOUND_BREEDS[name] then
@@ -87,14 +109,22 @@ credits_names.init = function(optional_credits)
 		credits = ok and required or nil
 	end
 	first_pool, last_pool, pet_pool = credits_names.build(credits or {})
+	local seen = {}
+	for i = 1, #pet_pool do
+		seen[pet_pool[i]] = true
+	end
+	for i = 1, #MASTIFF_NAMES do
+		local name = MASTIFF_NAMES[i]
+		if not seen[name] then
+			seen[name] = true
+			pet_pool[#pet_pool + 1] = name
+		end
+	end
 end
 
 credits_names.random_name = function(style)
-	if style == "surname" then
-		if #last_pool == 0 then
-			return "Unknown Subject"
-		end
-		return last_pool[math_random(#last_pool)]
+	if style == "ogryn" then
+		return OGRYN_NAMES[math_random(#OGRYN_NAMES)]
 	end
 	if style == "pet" then
 		if #pet_pool == 0 then

@@ -2,12 +2,12 @@
 	Name: Auto-9 Assistive Reticule
 	Author: Wobin
 	Date: 21/07/2026
-	Version: 1.3.0
+	Version: 1.4.0
 	Repository: https://github.com/Wobin/Auto-9-Assistive-Reticule
 ]]--
 
 local mod = get_mod("Auto-9 Assistive Reticule")
-mod.version = "1.3.0"
+mod.version = "1.4.0"
 
 mod.settings = {}
 

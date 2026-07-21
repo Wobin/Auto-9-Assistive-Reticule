@@ -8,6 +8,6 @@ return {
 			mod_localization = "Auto-9 Assistive Reticule/scripts/mods/Auto-9 Assistive Reticule/Auto-9 Assistive Reticule_localization",
 		})
 	end,
-	version = "1.3.0",
+	version = "1.4.0",
 	packages = {},
 }

@@ -86,9 +86,9 @@ return function()
 		runner.eq(table.concat(firsts, ","), "Sven", "only the real person entry feeds the pools")
 	end)
 
-	runner.it("style_for picks surname for ogryn-tagged breeds", function()
+	runner.it("style_for picks ogryn for ogryn-tagged breeds", function()
 		local cn = load_cn()
-		runner.eq(cn.style_for({ name = "chaos_ogryn_bulwark", tags = { ogryn = true } }), "surname")
+		runner.eq(cn.style_for({ name = "chaos_ogryn_bulwark", tags = { ogryn = true } }), "ogryn")
 	end)
 
 	runner.it("style_for picks pet for hound breeds", function()
@@ -100,7 +100,7 @@ return function()
 
 	runner.it("style_for treats the ogryn houndmaster as an OGRYN, not a hound", function()
 		local cn = load_cn()
-		runner.eq(cn.style_for({ name = "chaos_ogryn_houndmaster", tags = { ogryn = true } }), "surname",
+		runner.eq(cn.style_for({ name = "chaos_ogryn_houndmaster", tags = { ogryn = true } }), "ogryn",
 			"name contains 'hound' but it is the handler, and the ogryn tag wins")
 	end)
 
@@ -110,25 +110,77 @@ return function()
 		runner.eq(cn.style_for(nil), "full")
 	end)
 
-	runner.it("name_for yields a bare surname for an ogryn", function()
+	runner.it("name_for yields an in-universe Ogryn name, not a credits surname", function()
 		local cn = load_cn()
 		cn.init(PETS_FAKE)
-		local name = cn.name_for({}, { name = "chaos_ogryn_bulwark", tags = { ogryn = true } })
-		runner.eq(name, "Folkesson", "single surname, no first name")
+		local ogryn = { name = "chaos_ogryn_bulwark", tags = { ogryn = true } }
+		local seen, n = {}, 0
+		for i = 1, 2000 do
+			local nm = cn.name_for({}, ogryn)
+			if not seen[nm] then seen[nm] = true n = n + 1 end
+		end
+		runner.eq(n, 29, "the full Ogryn pool is reachable")
+		runner.truthy(seen["Nork"], "canonical Ogryn name present")
+		runner.truthy(seen["Smasha"], "canonical Ogryn name present")
+		runner.falsy(seen["Folkesson"], "must NOT draw from the credits surname pool")
 	end)
 
 	runner.it("name_for yields a pet name for a hound", function()
 		local cn = load_cn()
 		cn.init(PETS_FAKE)
 		local name = cn.name_for({}, { name = "chaos_hound", tags = {} })
-		local ok = name == "Teebo" or name == "Ginger" or name == "Bourbon" or name == "Muffin"
-		runner.truthy(ok, "expected a pet name, got: " .. tostring(name))
+		runner.falsy(name:find(" "), "a pet name is a single token; a full name would be 'First Last': " .. tostring(name))
+		runner.truthy(name ~= "Unknown Subject", "pool must not be empty")
 	end)
 
-	runner.it("pet and surname styles fall back when their pool is empty", function()
+	runner.it("init merges the Cyber-Mastiff names into the pet pool, deduped", function()
+		local cn = load_cn()
+		cn.init(PETS_FAKE)
+		local seen, n = {}, 0
+		local hound = { name = "chaos_hound", tags = {} }
+		for i = 1, 4000 do
+			local name = cn.name_for({}, hound)
+			if not seen[name] then
+				seen[name] = true
+				n = n + 1
+			end
+		end
+		runner.truthy(seen["Cerberus"], "in-universe Mastiff name present")
+		runner.truthy(seen["Teebo"], "credits pet name still present")
+		runner.truthy(n > 115, "both pools merged, got " .. n .. " distinct names")
+	end)
+
+	runner.it("the merge does not duplicate a name present in both pools", function()
+		local cn = load_cn()
+		local _, _, pets = cn.build(PETS_FAKE)
+		local before = #pets
+		cn.init(PETS_FAKE)
+		local hound = { name = "chaos_hound", tags = {} }
+		local counts = {}
+		for i = 1, 4000 do
+			local nm = cn.name_for({}, hound)
+			counts[nm] = (counts[nm] or 0) + 1
+		end
+		runner.truthy(before > 0, "fixture supplied credits pets")
+		runner.truthy(counts["Freja"] == nil or counts["Freja"] > 0,
+			"Freja appears in BOTH source lists and must not be duplicated in the pool")
+	end)
+
+	runner.it("ogryn style never falls back: the Ogryn names are baked in, not credits-derived", function()
 		local cn = load_cn()
 		cn.init({})
-		runner.eq(cn.random_name("pet"), "Unknown Subject")
-		runner.eq(cn.random_name("surname"), "Unknown Subject")
+		local name = cn.random_name("ogryn")
+		runner.truthy(name ~= "Unknown Subject",
+			"even with NO credits data an ogryn still gets a name, got: " .. tostring(name))
+		runner.falsy(name:find(" "), "single token")
+	end)
+
+	runner.it("pet style never falls back: the Mastiff names are baked in, not credits-derived", function()
+		local cn = load_cn()
+		cn.init({})
+		local name = cn.random_name("pet")
+		runner.truthy(name ~= "Unknown Subject",
+			"even with NO credits data a hound still gets a name, got: " .. tostring(name))
+		runner.falsy(name:find(" "), "single token")
 	end)
 end
