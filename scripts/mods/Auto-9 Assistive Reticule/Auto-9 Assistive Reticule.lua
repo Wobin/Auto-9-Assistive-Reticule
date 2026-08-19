@@ -1,13 +1,26 @@
 --[[
 	Name: Auto-9 Assistive Reticule
 	Author: Wobin
-	Date: 21/07/2026
-	Version: 1.4.0
+	Date: 20/08/2026
 	Repository: https://github.com/Wobin/Auto-9-Assistive-Reticule
 ]]--
 
 local mod = get_mod("Auto-9 Assistive Reticule")
-mod.version = "1.4.0"
+
+mod.colour_channel = function(id, index, default)
+	local c = mod:get(id)
+
+	if type(c) == "table" and #c >= 4 then
+		return c[index + 1]
+	end
+
+	local suffix = (index == 1 and "_R") or (index == 2 and "_G") or "_B"
+	local v = mod:get(id .. suffix)
+
+	return type(v) == "number" and v or default
+end
+
+mod.version = mod.get_metadata and mod:get_metadata("version") or "unknown"
 
 mod.settings = {}
 
@@ -128,9 +141,9 @@ end)
 local function colour(base, opacity_id)
 	return {
 		mod:get(opacity_id) or 255,
-		mod:get(base .. "_R") or 255,
-		mod:get(base .. "_G") or 0,
-		mod:get(base .. "_B") or 0,
+		mod.colour_channel(base, 1, 255),
+		mod.colour_channel(base, 2, 0),
+		mod.colour_channel(base, 3, 0),
 	}
 end
 
@@ -156,9 +169,9 @@ mod.refresh_settings = function()
 	else
 		s.outline_colour = {
 			255,
-			mod:get("a9_outline_colour_R") or 255,
-			mod:get("a9_outline_colour_G") or 0,
-			mod:get("a9_outline_colour_B") or 0,
+			mod.colour_channel("a9_outline_colour", 1, 255),
+			mod.colour_channel("a9_outline_colour", 2, 0),
+			mod.colour_channel("a9_outline_colour", 3, 0),
 		}
 	end
 	s.outline_priority = mod:get("a9_outline_priority") or 0
@@ -169,9 +182,9 @@ mod.refresh_settings = function()
 	s.scanner_size = mod:get("a9_scanner_size") or 24
 	s.scanner_colour = {
 		255,
-		mod:get("a9_scanner_colour_R") or 255,
-		mod:get("a9_scanner_colour_G") or 176,
-		mod:get("a9_scanner_colour_B") or 0,
+		mod.colour_channel("a9_scanner_colour", 1, 255),
+		mod.colour_channel("a9_scanner_colour", 2, 176),
+		mod.colour_channel("a9_scanner_colour", 3, 0),
 	}
 
 	s.tag_enabled = mod:get("a9_tag_enabled")
@@ -196,6 +209,10 @@ mod.on_setting_changed = function()
 	end
 end
 
+
+mod.on_settings_reset = function()
+	mod.on_setting_changed()
+end
 mod.on_all_mods_loaded = function()
 	mod:info(mod.version)
 	mod.refresh_settings()

@@ -24,18 +24,6 @@ return {
 		en = "Box colour",
 		["zh-cn"] = "方框颜色",
 	},
-	a9_box_colour_R = {
-		en = "Box colour (red)",
-		["zh-cn"] = "方框红色通道",
-	},
-	a9_box_colour_G = {
-		en = "Box colour (green)",
-		["zh-cn"] = "方框绿色通道",
-	},
-	a9_box_colour_B = {
-		en = "Box colour (blue)",
-		["zh-cn"] = "方框蓝色通道",
-	},
 	a9_box_opacity = {
 		en = "Box opacity",
 		["zh-cn"] = "方框透明度",
@@ -65,18 +53,6 @@ return {
 		en = "Line colour",
 		["zh-cn"] = "引线颜色",
 	},
-	a9_lines_colour_R = {
-		en = "Line colour (red)",
-		["zh-cn"] = "引线红色通道",
-	},
-	a9_lines_colour_G = {
-		en = "Line colour (green)",
-		["zh-cn"] = "引线绿色通道",
-	},
-	a9_lines_colour_B = {
-		en = "Line colour (blue)",
-		["zh-cn"] = "引线蓝色通道",
-	},
 	a9_lines_opacity = {
 		en = "Line opacity",
 		["zh-cn"] = "引线透明度",
@@ -105,18 +81,6 @@ return {
 	a9_outline_colour = {
 		en = "Outline colour",
 		["zh-cn"] = "描边颜色",
-	},
-	a9_outline_colour_R = {
-		en = "Outline colour (red)",
-		["zh-cn"] = "描边红色通道",
-	},
-	a9_outline_colour_G = {
-		en = "Outline colour (green)",
-		["zh-cn"] = "描边绿色通道",
-	},
-	a9_outline_colour_B = {
-		en = "Outline colour (blue)",
-		["zh-cn"] = "描边蓝色通道",
 	},
 	a9_outline_priority = {
 		en = "Outline priority",
@@ -150,18 +114,6 @@ return {
 	a9_scanner_colour = {
 		en = "Scanner colour",
 		["zh-cn"] = "扫描文字颜色",
-	},
-	a9_scanner_colour_R = {
-		en = "Scanner colour (red)",
-		["zh-cn"] = "文字红色通道",
-	},
-	a9_scanner_colour_G = {
-		en = "Scanner colour (green)",
-		["zh-cn"] = "文字绿色通道",
-	},
-	a9_scanner_colour_B = {
-		en = "Scanner colour (blue)",
-		["zh-cn"] = "文字蓝色通道",
 	},
 
 	a9_scanner_scanning = {
